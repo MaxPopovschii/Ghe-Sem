@@ -1,144 +1,28 @@
 // Servizio per interagire con le API dei trasporti pubblici
 // Utilizziamo l'API GTFS di Milano (Open Data) e Muoversi a Milano API
-import axios from 'axios';
-import realAPI from './realAPI';
 import gtfsSimulator from './gtfsSimulator';
 
-const API_CONFIG = {
-  // API Open Data Milano - GTFS Real-time
-  GTFS_REALTIME_BASE: 'https://giromilano.atm.it/proxy.ashx',
-  
-  // API Muoversi a Milano (dati statici GTFS)
-  GTFS_STATIC_BASE: 'https://geoapi.trasportimilano.it/api',
-  
-  // API Open Data Comune Milano
-  OPENDATA_BASE: 'https://dati.comune.milano.it/api/3/action',
-  
-  // Usa simulatore GTFS intelligente (veicoli su percorsi reali con orari veri)
-  USE_MOCK_DATA: true,
-  USE_GTFS_SIMULATOR: true, // Nuova opzione: simula veicoli basandosi su orari reali
-  
-  // Configurazione API Key (da ottenere su https://developer.atm.it)
-  API_KEY: import.meta.env.VITE_ATM_API_KEY || '',
-};
-
-// Servizio API principale
+// Tutti i dati restituiti da questo servizio sono dimostrativi.
 class TransportAPI {
-  constructor() {
-    this.client = axios.create({
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
-
-  // Ottieni fermate vicine alla posizione dell'utente
   async getNearbyStops(lat, lon, radius = 500) {
-    if (API_CONFIG.USE_MOCK_DATA) {
-      return this.getMockNearbyStops(lat, lon);
-    }
-    
-    try {
-      // In produzione: chiamata all'API reale
-      // const response = await this.client.get(`${API_CONFIG.GTFS_BASE}/stops/nearby`, {
-      //   params: { lat, lon, radius }
-      // });
-      // return response.data;
-      
-      return this.getMockNearbyStops(lat, lon);
-    } catch (error) {
-      console.error('Error fetching nearby stops:', error);
-      return this.getMockNearbyStops(lat, lon);
-    }
+    return this.getMockNearbyStops(lat, lon);
   }
 
-  // Ottieni arrivi previsti per una fermata
   async getStopArrivals(stopId) {
-    if (API_CONFIG.USE_MOCK_DATA) {
-      return this.getMockStopArrivals(stopId);
-    }
-    
-    try {
-      // Prova API reale con Open Data Milano
-      const arrivals = await realAPI.getStopArrivalsReal(stopId);
-      return arrivals;
-    } catch (error) {
-      console.error('Error fetching stop arrivals from real API, falling back to mock:', error);
-      return this.getMockStopArrivals(stopId);
-    }
+    return this.getMockStopArrivals(stopId);
   }
 
-  // Ottieni posizioni veicoli in tempo reale
   async getVehiclePositions(lineIds = []) {
-    // Opzione 1: Simulatore GTFS (veicoli su percorsi reali con orari)
-    if (API_CONFIG.USE_GTFS_SIMULATOR) {
-      const vehicles = gtfsSimulator.generateActiveVehicles();
-      
-      // Filtra per linee specifiche se richiesto
-      if (lineIds.length > 0) {
-        return vehicles.filter(v => lineIds.includes(v.lineId));
-      }
-      
-      return vehicles;
-    }
-    
-    // Opzione 2: Mock data (completamente random)
-    if (API_CONFIG.USE_MOCK_DATA) {
-      return this.getMockVehiclePositions();
-    }
-    
-    // Opzione 3: API reali
-    try {
-      const vehicles = await realAPI.getVehiclePositionsFromOpenData();
-      
-      if (lineIds.length > 0) {
-        return vehicles.filter(v => lineIds.includes(v.lineId));
-      }
-      
-      return vehicles;
-    } catch (error) {
-      console.error('Error fetching vehicle positions from real API, falling back to simulator:', error);
-      return gtfsSimulator.generateActiveVehicles();
-    }
+    const vehicles = gtfsSimulator.generateActiveVehicles();
+    return lineIds.length ? vehicles.filter(v => lineIds.includes(v.lineId)) : vehicles;
   }
 
-  // Cerca linee per nome/numero
   async searchLines(query) {
-    if (API_CONFIG.USE_MOCK_DATA) {
-      return this.getMockLines().filter(line => 
-        line.name.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-    
-    try {
-      // const response = await this.client.get(`${API_CONFIG.GTFS_BASE}/lines/search`, {
-      //   params: { q: query }
-      // });
-      // return response.data;
-      
-      return this.getMockLines();
-    } catch (error) {
-      console.error('Error searching lines:', error);
-      return [];
-    }
+    return this.getMockLines().filter(line => line.name.toLowerCase().includes(query.toLowerCase()));
   }
 
-  // Ottieni info su scioperi/interruzioni servizio
   async getServiceAlerts() {
-    if (API_CONFIG.USE_MOCK_DATA) {
-      return this.getMockServiceAlerts();
-    }
-    
-    try {
-      // const response = await this.client.get(`${API_CONFIG.GTFS_BASE}/alerts`);
-      // return response.data;
-      
-      return this.getMockServiceAlerts();
-    } catch (error) {
-      console.error('Error fetching service alerts:', error);
-      return [];
-    }
+    return this.getMockServiceAlerts();
   }
 
   // ==================== MOCK DATA ====================
@@ -220,7 +104,7 @@ class TransportAPI {
           estimatedTime: arrivalTime,
           minutesAway,
           delay: Math.floor(Math.random() * 3) - 1, // -1, 0, 1, 2 minuti
-          realtime: Math.random() > 0.3, // 70% ha dati real-time
+          realtime: false, // Dato simulato
           vehicleId: `${line.id}-${Math.floor(Math.random() * 100)}`,
         });
       }
