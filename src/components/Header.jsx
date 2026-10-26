@@ -22,6 +22,9 @@ const Header = ({ hasAlerts }) => {
         borderBottom: '1px solid rgba(255, 215, 0, 0.1)',
       }}
     >
+      <div role="status" className="px-4 py-1 text-center text-xs text-milano-yellow bg-black/60">
+        Modalità demo: posizioni, arrivi e avvisi sono simulati, non dati ATM in tempo reale.
+      </div>
       {/* Header normale */}
       {!showSearch && (
         <div className="px-4 py-3">
